@@ -1,7 +1,7 @@
 import csv
 
 print(f'Printint header row')
-header_row = 'state,population,cases,casesPer100k\n'
+header_row = 'state,population,cases,casesPer100k,lat,long\n'
 print(header_row)
 result_csv = open("./output_files/states-covid-data.txt", "w")
 result_csv.write(header_row)
@@ -19,8 +19,10 @@ with open('./input_files/states-data.csv') as csv_states_file:
                     covid_row_state = covid_row[0]
                     if covid_row_state == state_row_state:
                         population = state_row[1]
+                        lat = state_row[2]
+                        long = state_row[3]
                         cases = covid_row[1]
                         casesPer100 = (int(cases) / int(population)) * 100000
-                        print(f'{state_row[0]},{population},{cases},{int(casesPer100)}')
-                        result_csv.write(f'{state_row[0]},{population},{cases},{int(casesPer100)}\n')
+                        print(f'{state_row[0]},{population},{cases},{int(casesPer100)},{float(lat)},{float(long)}')
+                        result_csv.write(f'{state_row[0]},{population},{cases},{int(casesPer100)},{float(lat)},{float(long)}\n')
 result_csv.close()
