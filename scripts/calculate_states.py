@@ -1,28 +1,42 @@
 import csv
+import json
 
-print(f'Printint header row')
-header_row = 'state,population,cases,casesPer100k,lat,long\n'
-print(header_row)
-result_csv = open("./output_files/states-covid-data.txt", "w")
-result_csv.write(header_row)
+covid_data_results = []
 
-with open('./input_files/states-data.csv') as csv_states_file:
-    csv_states_reader = csv.reader(csv_states_file, delimiter=',')
-    line_count = 0
-    for state_row in csv_states_reader:
-        line_count += 1
-        if line_count > 1: 
-            state_row_state = state_row[0]
-            with open('./input_files/covid-data.csv') as csv_covid_file:
-                csv_covid_reader = csv.reader(csv_covid_file, delimiter=',')
-                for covid_row in csv_covid_reader:  
-                    covid_row_state = covid_row[0]
-                    if covid_row_state == state_row_state:
-                        population = state_row[1]
-                        lat = state_row[2]
-                        long = state_row[3]
-                        cases = covid_row[1]
-                        casesPer100 = (int(cases) / int(population)) * 100000
-                        print(f'{state_row[0]},{population},{cases},{int(casesPer100)},{float(lat)},{float(long)}')
-                        result_csv.write(f'{state_row[0]},{population},{cases},{int(casesPer100)},{float(lat)},{float(long)}\n')
-result_csv.close()
+with open('./input_files/states-population.json') as states_json_file:
+    states_population_data = json.load(states_json_file)
+    for (state_str, population_str) in states_population_data.items():
+        state_population = int(population_str)
+        state_dictionary = {
+            "name": state_str,
+            "population": state_population,
+        }
+        total_state_cases = 0
+        total_state_deaths = 0
+        cases_by_date = {}
+        with open('./input_files/covid-data.csv') as csv_covid_file:
+            csv_covid_reader = csv.reader(csv_covid_file, delimiter=',')
+            for covid_row in csv_covid_reader: 
+                covid_row_state = covid_row[1] 
+                if covid_row_state == state_str:
+                    covid_row_date = covid_row[0]
+                    covid_row_fips = covid_row[2]
+                    covid_row_cases = covid_row[3]
+                    covid_row_deaths = covid_row[4]
+                    total_state_cases += int(covid_row_cases)
+                    total_state_deaths += int(covid_row_deaths)
+                    cases_by_date[covid_row_date] = {
+                        "cases": int(covid_row_cases),
+                        "deaths": int(covid_row_deaths)
+                    }
+            state_dictionary["cases"] = total_state_cases
+            state_dictionary["deaths"] = total_state_cases
+            state_dictionary["casesPer100K"] = (total_state_cases / state_population) * 100000
+            state_dictionary["casesByDate"] = cases_by_date
+
+        covid_data_results.append(state_dictionary)
+
+json_object = json.dumps(covid_data_results, indent=4)
+# Writing to sample.json
+with open("./output_files/covid_data_results.json", "w") as outfile:
+    outfile.write(json_object)
